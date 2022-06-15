@@ -78,7 +78,8 @@ int conf_init(parse_command_t *const cmds);
  */
 int conf_parse_file(parse_command_t *const cmds, char const *const confile);
 /**
- * @brief 将命令行参数解析到配置项.
+ * @brief 将命令行参数解析到配置项. 命令行参数形如
+ *     --option1=value1 --option2 value2
  *
  * @param cmds parse_command_t 数组，最后一个对象所以值应为 0
  * @param argc 参数数量
@@ -88,7 +89,7 @@ int conf_parse_file(parse_command_t *const cmds, char const *const confile);
 int conf_parse_args(parse_command_t *const cmds, int argc, char const *argv[]);
 
 /**
- * @brief 将环境变量解析到配置项
+ * @brief 将环境变量解析到配置项. 忽略大小写，环境变量通常是全大写的。
  *
  * @param cmds parse_command_t 数组，最后一个对象所以值应为 0
  * @return int 成功返回 0

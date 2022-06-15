@@ -39,7 +39,7 @@ int main(int argc, const char *argv[]) {
         return -1;
     }
 
-    /* 使用环境变量覆盖值 */
+    /* 使用环境变量覆盖值，会忽略大小写 */
     if (conf_parse_env(commands) < 0) {
         printf("conf_parse_env return -1\n");
         return -1;
