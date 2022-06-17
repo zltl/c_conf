@@ -20,14 +20,17 @@ int main(int argc, const char *argv[]) {
 
         // 设置 is_daemon 配置项为 bool 类型，默认值为 yes
         // yes -> 1, no -> 0
-        CONF_CMD_BOOL(pconf, is_daemon, "yes"),
+        CONF_CMD_BOOL(pconf, is_daemon, "yes",
+                      "set to 'yes' to run as daemon, 'no' to run at frontend"),
 
         // 设置 max_memory 配置项为 字节 类型，默认值为 10Mib
         // 最终 max_meory=10*1024*1024
-        CONF_CMD_MEM(pconf, max_memory, "10M"),
+        CONF_CMD_MEM(pconf, max_memory, "10M",
+                     "the maximum memory that this program consume."),
 
         // 设置 log_path 配置项为 字符串 类型，默认值为 /tmp/log.txt
-        CONF_CMD_STR(pconf, log_path, "/tmp/log.txt"),
+        CONF_CMD_STR(pconf, log_path, "/tmp/log.txt",
+                     "the logging output file"),
 
         // CONF_CMD_END() 必须最后
         CONF_CMD_END(),
@@ -45,7 +48,8 @@ int main(int argc, const char *argv[]) {
         return -1;
     }
 
-    const char *file = "/tmp/conf.ini";
+    // const char *file = "/tmp/conf.ini";
+    const char *file = NULL;
     /* 使用配置文件覆盖默认值 */
     if (file && conf_parse_file(commands, file) < 0) {
         printf("conf_parse_file return -1\n");
@@ -57,6 +61,10 @@ int main(int argc, const char *argv[]) {
         printf("conf_parse_args return -1\n");
         return -1;
     }
+
+    /* 打印配置参数 */
+    conf_print_usage(stdout, commands);
+
     /* 打印最终配置值 */
     conf_print_conf(stdout, commands);
 

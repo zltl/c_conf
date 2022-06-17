@@ -289,8 +289,12 @@ static int conf_parse_line(parse_command_t *const cmds, const char *const line,
 int conf_init(parse_command_t *const cmds) {
     parse_command_t *it = cmds;
     for (it = cmds; it->cmd; it++) {
+        size_t slen = 0;
+        if (it->default_value_string) {
+            slen = strlen(it->default_value_string);
+        }
         if (it->parse_func(it->addr, it->addr_cap, it->default_value_string,
-                           strlen(it->default_value_string)) < 0) {
+                           slen) < 0) {
             printf("default conf error: key=%s, value=%s\n", it->cmd,
                    it->default_value_string);
             return -1;
@@ -341,6 +345,15 @@ int conf_parse_key_value_arg(parse_command_t *const cmds, const char *key,
     return 0;
 }
 
+static void convert_key_underscore(char *key, int len) {
+    int i;
+    for (i = 0; i < len; i++) {
+        if (key[i] == '-' || key[i] == '.') {
+            key[i] = '_';
+        }
+    }
+}
+
 int conf_parse_args(parse_command_t *const cmds, int argc, char const *argv[]) {
     int i;
     static char key[CONF_MAX_LINE_LEN], value[CONF_MAX_LINE_LEN];
@@ -355,19 +368,29 @@ int conf_parse_args(parse_command_t *const cmds, int argc, char const *argv[]) {
                 if (minlen > CONF_MAX_LINE_LEN) {
                     minlen = CONF_MAX_LINE_LEN;
                 }
-                strncpy(key, line_p, minlen);
+                strncpy(key, line_p, CONF_MAX_LINE_LEN);
+                // foo-bar, foo.bar same as foo_bar
+                convert_key_underscore(key, minlen);
                 minlen = strlen(line_p) - minlen /*key*/ - 1 /*=*/;
                 if (minlen > CONF_MAX_LINE_LEN) {
                     minlen = CONF_MAX_LINE_LEN;
                 }
-                strncpy(value, eqindex + 1, minlen);
+                strncpy(value, eqindex + 1, CONF_MAX_LINE_LEN);
                 conf_parse_key_value_arg(cmds, key, value, argv[i]);
                 continue;
             }
             if (i + 1 == argc) {
                 return 0;
             }
-            conf_parse_key_value_arg(cmds, &argv[i][2], argv[i + 1], argv[i]);
+            minlen = strlen(&argv[i][2]) - 2;
+            if (minlen > CONF_MAX_LINE_LEN) {
+                minlen = CONF_MAX_LINE_LEN;
+            }
+            // foo-bar, foo.bar same as foo_bar
+            convert_key_underscore(key, minlen);
+
+            strncpy(key, &argv[i][2], CONF_MAX_LINE_LEN);
+            conf_parse_key_value_arg(cmds, key, argv[i + 1], argv[i]);
             ++i;
         }
     }
@@ -414,4 +437,46 @@ int conf_print_conf(FILE *out, parse_command_t *cmds) {
         }
     }
     return 0;
+}
+
+void conf_print_usage(FILE *out, parse_command_t *cmds) {
+    parse_command_t *it;
+    char key[CONF_MAX_LINE_LEN];
+    int i;
+    for (it = cmds; it->cmd; it++) {
+        int minlen = strlen(it->cmd);
+        if (minlen > CONF_MAX_LINE_LEN) {
+            minlen = CONF_MAX_LINE_LEN;
+        }
+        strncpy(key, it->cmd, CONF_MAX_LINE_LEN);
+        for (i = 0; i < minlen; ++i) {
+            if (key[i] == '_') {
+                key[i] = '-';
+            }
+        }
+        fprintf(out, "--%s\t", key);
+        if (it->parse_func == conf_parse_integer) {
+            fprintf(out, "INTEGER(example:1/23/0x56...)\t");
+        } else if (it->parse_func == conf_parse_bool) {
+            fprintf(out, "BOOL(yes/no)\t");
+        } else if (it->parse_func == conf_parse_memspace_as_bytes) {
+            fprintf(out, "SPACE(example:1g3k/5m/20k/100B...)\t");
+        } else if (it->parse_func == conf_parse_time_as_second) {
+            fprintf(out, "DURATION(example:3y10d10h6m10s/10h)\t");
+        } else if (it->parse_func == conf_parse_string) {
+            fprintf(out, "STRING(example:this-is-string)\t");
+        } else if (it->parse_func == conf_do_include) {
+            fprintf(out, "CONFILE(example:path/to/confile...)\t");
+        } else {
+            fprintf(out, "unkown type\t");
+        }
+
+        if (it->desc) {
+            fprintf(out, "%s\t", it->desc);
+        }
+        if (it->default_value_string) {
+            fprintf(out, "default: %s", it->default_value_string);
+        }
+        fprintf(out, "\n");
+    }
 }

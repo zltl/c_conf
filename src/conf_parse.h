@@ -60,6 +60,7 @@ typedef struct _parse_command_t {
     size_t addr_cap;
     char *default_value_string;
     int value_type;
+    char *desc;
 } parse_command_t;
 
 /**
@@ -105,26 +106,42 @@ int conf_parse_env(parse_command_t *const cmds);
  */
 int conf_print_conf(FILE *out, parse_command_t *cmds);
 
+/**
+ * @brief 打印配置参数
+ *
+ * @param out 打印到输出流，一般是 stdout.
+ * @param cmds parse_command_t 数组.
+ */
+void conf_print_usage(FILE *out, parse_command_t *cmds);
+
 long long get_int_from_addr(void *addr, size_t addr_cap);
 
 #define CONF_CMD_END() \
-    { NULL, NULL, NULL, 0, NULL, 0 }
-#define CONF_CMD_BEGIN(cmds)                                \
-    {"include", conf_do_include, cmds, 0, "", 0}, { \
-        "conf", conf_do_include, cmds, 0, "", 0     \
+    { NULL, NULL, NULL, 0, NULL, 0, NULL }
+#define CONF_CMD_BEGIN(cmds)                                            \
+    {"include",                                                         \
+     conf_do_include,                                                   \
+     cmds,                                                              \
+     0,                                                                 \
+     NULL,                                                              \
+     0,                                                                 \
+     "include configuration file"},                                     \
+    {                                                                   \
+        "conf", conf_do_include, cmds, 0, NULL, 0, "configuration file" \
     }
-#define CONF_CMD(conf, key, func, default_value, vt) \
-    { #key, func, &conf->key, sizeof(conf->key), default_value, vt }
-#define CONF_CMD_INT(conf, key, default_value) \
-    CONF_CMD(conf, key, conf_parse_integer, default_value, VT_INT)
-#define CONF_CMD_STR(conf, key, default_value) \
-    CONF_CMD(conf, key, conf_parse_string, default_value, VT_STR)
-#define CONF_CMD_MEM(conf, key, default_value) \
-    CONF_CMD(conf, key, conf_parse_memspace_as_bytes, default_value, VT_INT)
-#define CONF_CMD_TIME(conf, key, default_value) \
-    CONF_CMD(conf, key, conf_parse_time_as_second, default_value, VT_INT)
-#define CONF_CMD_BOOL(conf, key, default_value) \
-    CONF_CMD(conf, key, conf_parse_bool, default_value, VT_INT)
+#define CONF_CMD(conf, key, func, default_value, vt, desc) \
+    { #key, func, &conf->key, sizeof(conf->key), default_value, vt, desc }
+#define CONF_CMD_INT(conf, key, default_value, desc) \
+    CONF_CMD(conf, key, conf_parse_integer, default_value, VT_INT, desc)
+#define CONF_CMD_STR(conf, key, default_value, desc) \
+    CONF_CMD(conf, key, conf_parse_string, default_value, VT_STR, desc)
+#define CONF_CMD_MEM(conf, key, default_value, desc)                         \
+    CONF_CMD(conf, key, conf_parse_memspace_as_bytes, default_value, VT_INT, \
+             desc)
+#define CONF_CMD_TIME(conf, key, default_value, desc) \
+    CONF_CMD(conf, key, conf_parse_time_as_second, default_value, VT_INT, desc)
+#define CONF_CMD_BOOL(conf, key, default_value, desc) \
+    CONF_CMD(conf, key, conf_parse_bool, default_value, VT_INT, desc)
 
 #ifdef __cplusplus
 }
