@@ -15,7 +15,7 @@ int main(int argc, const char *argv[]) {
 
     parse_command_t commands[] = {
 
-        // CONF_CMD_BEGIN() 必须第一个
+        // CONF_CMD_BEGIN()，可选的
         CONF_CMD_BEGIN(commands),
 
         // 设置 is_daemon 配置项为 bool 类型，默认值为 yes
